@@ -1,0 +1,1511 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyst Assistant</title>
+    <!-- Biblioteca de Ícones Modernos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Biblioteca de Gráficos Profissionais (Chart.js) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDK versão "compat" -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-storage-compat.js"></script>
+    <style>
+        :root {
+            --bg-gradiente: linear-gradient(135deg, #e8edf5 0%, #dce4f2 50%, #eef1f8 100%);
+            --bg-sidebar: #2c3e6b;
+            --bg-sidebar-hover: #374a7a;
+            --bg-paineis-esat: #f0f4fa;
+            --bg-cards-container: #374a7a;
+            --texto-principal: #1e293b;
+            --texto-sidebar: #e2e8f0;
+            --texto-suave: #64748b;
+            --azul-link: #3b82f6;
+            --azul-accent: #6366f1;
+            --laranja-alerta: #f59e0b;
+            --verde-online: #10b981;
+            --cinza-offline: #94a3b8;
+            --sombra-card: 0 4px 16px rgba(44, 62, 107, 0.10);
+            --sombra-card-hover: 0 8px 28px rgba(44, 62, 107, 0.16);
+            --borda-suave: #e2e8f0;
+            --bg-input: #f8fafc;
+            --bg-body: #f1f4f9;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg-gradiente);
+            color: var(--texto-principal);
+            display: grid;
+            grid-template-columns: 270px 1fr 300px;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        /* TELA DE LOGIN OVERLAY INTEGRADA */
+        #telaLoginSistema {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(135deg, #1e3a5f 0%, #2c3e6b 50%, #1a2744 100%);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 5000;
+        }
+
+        .login-card-container {
+            background: #ffffff;
+            border: none;
+            padding: 44px 40px;
+            border-radius: 18px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 24px 48px rgba(0,0,0,0.18);
+            text-align: center;
+        }
+
+        .login-card-container h2 { color: #1e293b !important; font-weight: 700; }
+        .login-card-container label { color: #475569 !important; }
+        .login-card-container .form-input-moderno {
+            background: #f1f5f9 !important;
+            border: 1.5px solid #e2e8f0 !important;
+            color: #1e293b !important;
+            border-radius: 10px !important;
+        }
+        .login-card-container .form-input-moderno:focus {
+            border-color: var(--azul-link) !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12) !important;
+        }
+        .login-card-container .btn-enviar-moderno {
+            background: linear-gradient(135deg, var(--azul-link), var(--azul-accent));
+            border: none;
+            color: white;
+            border-radius: 10px;
+            font-size: 14px;
+            padding: 14px;
+            letter-spacing: 0.5px;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+        }
+        .login-card-container .btn-enviar-moderno:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+        .login-card-container p { color: #94a3b8 !important; }
+
+        /* COLUNA ESQUERDA: MENU LATERAL */
+        .sidebar-esquerda {
+            background: linear-gradient(180deg, #2c3e6b 0%, #1e2d54 100%);
+            border-right: none;
+            padding: 22px 16px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 2px 0 16px rgba(30, 45, 84, 0.12);
+        }
+
+        .logo-menu-topo {
+            display: block;
+            width: 80px;
+            height: auto;
+            margin: 0 auto 18px auto;
+            object-fit: contain;
+            filter: brightness(1.1);
+        }
+
+        .home-topo-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #ffffff;
+            font-size: 15px;
+            font-weight: 600;
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            margin-bottom: 22px;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .home-topo-btn i {
+            background: rgba(255, 255, 255, 0.12);
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .home-topo-btn:hover {
+            background: rgba(255, 255, 255, 0.16);
+            transform: translateX(2px);
+        }
+
+        .menu-items-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 13.5px;
+            font-weight: 500;
+            padding: 11px 14px;
+            border-radius: 10px;
+            transition: all 0.25s ease;
+            cursor: pointer;
+        }
+
+        .menu-item i {
+            font-size: 14px;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.07);
+            color: rgba(255, 255, 255, 0.65);
+            transition: all 0.25s ease;
+        }
+
+        .menu-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            transform: translateX(3px);
+        }
+
+        .menu-item:hover i {
+            background: rgba(59, 130, 246, 0.25);
+            color: #93bbfc;
+        }
+
+        .menu-item.ativo {
+            background: rgba(59, 130, 246, 0.2);
+            color: #ffffff;
+        }
+
+        .menu-item.ativo i {
+            background: var(--azul-link);
+            color: #ffffff;
+        }
+
+        /* AREA CENTRAL */
+        .painel-central {
+            padding: 32px;
+            overflow-y: auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            background: var(--bg-body);
+        }
+
+        .tela-central {
+            width: 100%;
+            max-width: 750px;
+            display: none;
+        }
+
+        .tela-central.ativa {
+            display: block;
+        }
+
+        .banner-central-logo-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 32px;
+        }
+
+        .banner-central-logo-container i {
+            background: linear-gradient(135deg, var(--azul-link), var(--azul-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .banner-central-logo-container h1 {
+            font-size: 36px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .banner-central-logo-container h1 span:first-child { color: #1e293b !important; -webkit-text-fill-color: #1e293b !important; }
+        .banner-central-logo-container h1 span:last-child {
+            background: linear-gradient(135deg, var(--azul-link), var(--azul-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* BARRA DE BUSCA */
+        .busca-container-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 28px;
+        }
+
+        .input-busca-moderna {
+            width: 100%;
+            background: #ffffff;
+            border: 1.5px solid var(--borda-suave);
+            padding: 15px 22px;
+            padding-right: 54px;
+            border-radius: 14px;
+            font-size: 15px;
+            color: #334155;
+            outline: none;
+            box-shadow: var(--sombra-card);
+            transition: all 0.25s ease;
+        }
+
+        .input-busca-moderna:focus {
+            border-color: var(--azul-link);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), var(--sombra-card);
+        }
+
+        .busca-container-wrapper > i {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 16px;
+            cursor: pointer;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .busca-container-wrapper > i:hover {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--azul-link);
+        }
+
+        /* FILTROS GRID DISTRIBUIDOS */
+        .abas-modulos-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            margin-bottom: 28px;
+            width: 100%;
+            gap: 12px;
+        }
+
+        .aba-btn-wrapper-esq { display: flex; justify-content: flex-start; }
+        .aba-btn-wrapper-cent { display: flex; justify-content: center; }
+        .aba-btn-wrapper-dir { display: flex; justify-content: flex-end; }
+
+        .aba-btn-moderno {
+            background: #ffffff;
+            border: 1.5px solid var(--borda-suave);
+            padding: 11px 22px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .aba-btn-moderno i { font-size: 14px; color: #94a3b8; transition: color 0.25s ease; }
+        .aba-btn-moderno:hover { border-color: var(--azul-link); color: var(--azul-link); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1); }
+        .aba-btn-moderno:hover i { color: var(--azul-link); }
+        .aba-btn-moderno.ativa {
+            background: linear-gradient(135deg, var(--azul-link), var(--azul-accent));
+            border-color: transparent;
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+        }
+        .aba-btn-moderno.ativa i { color: #ffffff; }
+
+        /* PAINEL DE RELATÓRIOS DESIGN */
+        .card-relatorio-dashboard {
+            background: #ffffff;
+            border: 1.5px solid var(--borda-suave);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: var(--sombra-card);
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .relatorio-filtros-linha {
+            display: flex;
+            gap: 15px;
+            align-items: flex-end;
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--borda-suave);
+        }
+        .relatorio-controle-grupo { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+        .relatorio-controle-grupo label { font-size: 12px; font-weight: 700; color: #475569; }
+        .canvas-container-grafico {
+            position: relative;
+            margin: 0 auto;
+            height: 320px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        /* SUB-ABAS DO CADASTRO DE USUARIO */
+        .subabas-cadastro-row { display: flex; gap: 10px; margin-bottom: 22px; }
+
+        .subaba-btn {
+            padding: 9px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            background: rgba(255,255,255,0.06);
+            border: 1.5px solid rgba(255,255,255,0.12);
+            color: rgba(255,255,255,0.65);
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .subaba-btn:hover { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.9); }
+        .subaba-btn.ativa {
+            background: linear-gradient(135deg, var(--azul-link), var(--azul-accent));
+            border-color: transparent;
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+        }
+
+        /* LISTAGEM DE USUARIOS CADASTRADOS */
+        .usuario-linha-listagem {
+            background: #ffffff;
+            color: #1e293b;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            box-shadow: var(--sombra-card);
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+        .usuario-linha-listagem:hover { box-shadow: var(--sombra-card-hover); border-color: var(--borda-suave); }
+        .usuario-linha-info strong { display: block; font-size: 14px; color: #0f172a; }
+        .usuario-linha-info span { font-size: 12px; color: #64748b; }
+        .usuario-linha-tag {
+            font-size: 11px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #eff6ff, #e0e7ff);
+            color: var(--azul-link);
+            padding: 5px 14px;
+            border-radius: 20px;
+            white-space: nowrap;
+            border: 1px solid rgba(59, 130, 246, 0.15);
+        }
+
+        /* LISTA DE INCIDENTES */
+        .lista-incidentes-wrapper {
+            background: #ffffff;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: var(--sombra-card);
+            width: 100%;
+            margin-top: 10px;
+            border: 1px solid var(--borda-suave);
+        }
+        .lista-incidentes-header {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 10px;
+            padding: 14px 22px;
+            background: #f8fafc;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            border-bottom: 1px solid var(--borda-suave);
+        }
+        .lista-incidentes-linha {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 10px;
+            padding: 14px 22px;
+            border-bottom: 1px solid #f1f5f9;
+            cursor: pointer;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+        .lista-incidentes-linha:last-child { border-bottom: none; }
+        .lista-incidentes-linha:hover { background: #f0f5ff; }
+        .lista-incidentes-titulo { font-size: 13.5px; font-weight: 600; color: #0f172a; }
+        .lista-incidentes-modulo-tag {
+            font-size: 11px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #eff6ff, #e0e7ff);
+            color: var(--azul-link);
+            padding: 4px 12px;
+            border-radius: 20px;
+            width: fit-content;
+            border: 1px solid rgba(59, 130, 246, 0.12);
+        }
+        .lista-incidentes-data { font-size: 12.5px; color: #475569; }
+        .btn-voltar-lista {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: none;
+            border: none;
+            color: var(--azul-link);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 14px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .btn-voltar-lista:hover { background: rgba(59, 130, 246, 0.08); }
+
+        /* CARD DE DIAGNOSTICO */
+        .card-resultado-busca {
+            background: #ffffff;
+            color: #1e293b;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: var(--sombra-card);
+            width: 100%;
+            margin-top: 10px;
+            border: 1px solid var(--borda-suave);
+        }
+        .card-busca-corpo { padding: 28px; }
+        .card-busca-corpo h2 {
+            margin: 0 0 16px 0;
+            font-size: 18px;
+            color: #0f172a;
+            font-weight: 700;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        .card-busca-corpo p { margin: 10px 0; font-size: 14px; color: #334155; line-height: 1.6; }
+        .card-busca-corpo strong { color: #0f172a; font-weight: 600; }
+        .card-busca-imagem-wrapper { background: #f8fafc; padding: 18px; text-align: center; border-top: 1px solid var(--borda-suave); }
+        .card-busca-img { max-width: 100%; max-height: 240px; border-radius: 10px; }
+        .card-busca-comentarios-box { background: #f1f5f9; padding: 22px; border-top: 1px solid var(--borda-suave); display: flex; flex-direction: column; gap: 12px; }
+        .comentario-line { font-size: 13px; color: #334155; display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .comentario-line i { color: var(--azul-link); font-size: 12px; }
+
+        /* FORMULARIOS DAS TELAS */
+        .container-painel-formulario {
+            background: linear-gradient(135deg, #2c3e6b, #1e2d54);
+            border: none;
+            padding: 32px;
+            border-radius: 16px;
+            width: 100%;
+            box-shadow: 0 8px 30px rgba(30, 45, 84, 0.2);
+        }
+        .container-painel-formulario h2 {
+            font-size: 18px;
+            margin-bottom: 22px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            padding-bottom: 14px;
+            color: #ffffff;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+        .form-linha { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-linha-tripla { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 16px; }
+        .form-grupo { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .form-grupo label { font-size: 12px; color: rgba(255,255,255,0.7); font-weight: 600; letter-spacing: 0.3px; }
+        .form-input-moderno {
+            background: rgba(255,255,255,0.08);
+            border: 1.5px solid rgba(255,255,255,0.15);
+            padding: 12px 14px;
+            border-radius: 10px;
+            color: white;
+            outline: none;
+            font-size: 13px;
+            width: 100%;
+            transition: all 0.25s ease;
+        }
+        .form-input-moderno:focus { border-color: var(--azul-link); background: rgba(255,255,255,0.12); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+        .form-input-moderno:disabled { background: rgba(255,255,255,0.03); color: #94a3b8; cursor: not-allowed; border-color: rgba(255,255,255,0.06); }
+        .btn-enviar-moderno {
+            background: linear-gradient(135deg, var(--azul-link), var(--azul-accent));
+            border: none;
+            color: white;
+            padding: 13px;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            text-transform: uppercase;
+            margin-top: 12px;
+            font-size: 13px;
+            letter-spacing: 0.8px;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+        }
+        .btn-enviar-moderno:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(59, 130, 246, 0.4); }
+        .caixa-retencao-alert {
+            background: rgba(245, 158, 11, 0.08);
+            border: 1.5px solid rgba(245, 158, 11, 0.3);
+            padding: 14px 16px;
+            border-radius: 10px;
+            font-size: 12.5px;
+            color: #fde68a;
+            margin-bottom: 22px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* CHAT */
+        .painel-chat-modulo {
+            width: 100%;
+            background: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--sombra-card);
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            height: 420px;
+            border: 1px solid var(--borda-suave);
+        }
+        .chat-usuarios-lista { background: #fafbfd; border-right: 1px solid var(--borda-suave); overflow-y: auto; }
+        .chat-usuario-box { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s ease; }
+        .chat-usuario-box.ativo { background: #eff6ff; border-left: 3px solid var(--azul-link); }
+        .chat-usuario-avatar { width: 34px; height: 34px; background: linear-gradient(135deg, #93c5fd, #818cf8); border-radius: 50%; }
+        .chat-usuario-infos { display: flex; flex-direction: column; }
+        .chat-usuario-nome { font-size: 13px; font-weight: 600; color: #0f172a; }
+        .chat-usuario-status { font-size: 11px; color: #64748b; display: flex; align-items: center; gap: 5px; }
+        .chat-status-led { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+        .chat-status-led.online { background: var(--verde-online); box-shadow: 0 0 6px rgba(16, 185, 129, 0.4); }
+        .chat-conversa-janela { display: flex; flex-direction: column; background: #f8fafc; }
+        .chat-conversa-topo { background: #ffffff; padding: 14px 22px; border-bottom: 1px solid var(--borda-suave); font-size: 14px; font-weight: 700; color: #1e293b; display: flex; align-items: center; justify-content: space-between; }
+        .chat-mensagens-corpo { flex: 1; padding: 18px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .chat-balao { max-width: 75%; padding: 11px 16px; border-radius: 16px; font-size: 13px; line-height: 1.5; }
+        .chat-balao.recebido { background: #ffffff; color: #334155; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border: 1px solid #f1f5f9; }
+        .chat-balao.enviado { background: linear-gradient(135deg, var(--azul-link), var(--azul-accent)); color: #ffffff; align-self: flex-end; border-bottom-right-radius: 4px; box-shadow: 0 2px 10px rgba(59, 130, 246, 0.25); }
+        .chat-balao.sistema { align-self: center; background: #fef3c7; color: #92400e; border-radius: 20px; font-size: 11.5px; font-weight: 600; padding: 6px 16px; box-shadow: none; }
+        .chat-balao-tempo { font-size: 9.5px; color: rgba(255,255,255,0.7); display: block; margin-top: 4px; text-align: right; }
+        .chat-balao.recebido .chat-balao-tempo { color: #94a3b8; }
+        .chat-inputs-footer { background: #ffffff; padding: 14px; border-top: 1px solid var(--borda-suave); display: flex; flex-direction: column; gap: 8px; position: relative; }
+        .chat-input-container-row { display: flex; gap: 10px; align-items: center; }
+        .chat-input-field { flex: 1; border: 1.5px solid #e2e8f0; padding: 10px 16px; border-radius: 24px; font-size: 13px; outline: none; background: #f8fafc; transition: border-color 0.2s ease; }
+        .chat-icones-linha { display: flex; gap: 14px; align-items: center; color: #94a3b8; font-size: 14px; }
+        .chat-icon-btn { cursor: pointer; transition: color 0.2s ease; }
+        .chat-icon-btn:hover { color: var(--azul-link); }
+        .chat-btn-send { background: linear-gradient(135deg, var(--azul-link), var(--azul-accent)); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 3px 10px rgba(59, 130, 246, 0.3); }
+        .chat-btn-send:hover { transform: scale(1.08); }
+        .emoji-picker-box { position: absolute; bottom: 100%; left: 14px; margin-bottom: 8px; background: #ffffff; border: 1px solid var(--borda-suave); border-radius: 12px; box-shadow: var(--sombra-card-hover); padding: 10px; display: none; grid-template-columns: repeat(6, 1fr); gap: 4px; width: 230px; z-index: 50; }
+        .emoji-picker-box.aberto { display: grid; }
+        .emoji-picker-item { font-size: 19px; text-align: center; padding: 4px; border-radius: 6px; cursor: pointer; line-height: 1; }
+        .emoji-picker-item:hover { background: #eff6ff; }
+
+        /* MULTI IMAGENS DESIGN */
+        .galeria-imagens-wrapper { background: #f8fafc; padding: 18px; border-top: 1px solid var(--borda-suave); display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+        .galeria-imagens-wrapper img { max-width: 280px; max-height: 200px; border-radius: 10px; border: 1px solid var(--borda-suave); cursor: pointer; transition: transform 0.2s ease; object-fit: cover; }
+        .galeria-imagens-wrapper img:hover { transform: scale(1.04); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+        .galeria-vazia { color: #94a3b8; font-size: 13px; font-style: italic; padding: 12px 0; }
+        .lista-incidentes-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; border: 1px solid #e2e8f0; }
+        .lista-incidentes-thumb-placeholder { width: 40px; height: 40px; border-radius: 6px; background: #f1f5f9; display: flex; align-items: center; justify-content: center; color: #cbd5e1; font-size: 16px; }
+
+        /* COLUNA DIREITA */
+        .sidebar-direita { background: #ffffff; border-left: 1px solid var(--borda-suave); padding: 24px 20px; display: flex; flex-direction: column; gap: 22px; height: 100vh; overflow-y: auto; }
+        .perfil-box-moderno { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--borda-suave); padding-bottom: 18px; }
+        .perfil-avatar-img { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #93c5fd, #818cf8); border: 2px solid #e2e8f0; }
+        .perfil-dados-txt { display: flex; flex-direction: column; }
+        .perfil-nome { font-size: 14px; font-weight: 700; color: #1e293b; }
+        .perfil-cargo { font-size: 12px; color: #64748b; }
+        .perfil-links { font-size: 11px; margin-top: 4px; display: flex; gap: 6px; }
+        .perfil-links a { color: var(--azul-link); text-decoration: none; cursor: pointer; font-weight: 500; }
+        .parametro-grupo-box { display: flex; flex-direction: column; gap: 8px; }
+        .parametro-grupo-box label { font-size: 12.5px; font-weight: 700; color: #334155; letter-spacing: 0.3px; }
+        .radio-linha-container { display: flex; gap: 20px; align-items: center; }
+        .radio-item-opcao { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: #475569; }
+        .sidebar-direita-input { width: 100%; background: #f8fafc; border: 1.5px solid var(--borda-suave); padding: 10px 14px; border-radius: 10px; font-size: 13px; color: #334155; outline: none; }
+        .sidebar-direita-select { width: 100%; background: #f8fafc; border: 1.5px solid var(--borda-suave); padding: 10px 14px; border-radius: 10px; font-size: 13px; color: #334155; outline: none; cursor: pointer; }
+        .sidebar-direita-textarea { width: 100%; background: #f8fafc; border: 1.5px solid var(--borda-suave); padding: 10px 14px; border-radius: 10px; font-size: 13px; color: #334155; outline: none; resize: none; height: 64px; }
+        .btn-pesquisar-sidebar { background: linear-gradient(135deg, var(--azul-link), var(--azul-accent)); border: none; color: white; padding: 9px 16px; border-radius: 10px; font-size: 12.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 10px rgba(59, 130, 246, 0.25); margin-top: 4px; }
+
+        /* MODAL POPUP */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 2000; visibility: hidden; opacity: 0; transition: all 0.25s ease; }
+        .modal-overlay.ativo { visibility: visible; opacity: 1; }
+        .modal-content { background: linear-gradient(135deg, #2c3e6b, #1e2d54); border: none; padding: 28px; border-radius: 18px; width: 100%; max-width: 650px; box-shadow: 0 24px 50px rgba(0,0,0,0.3); overflow-y: auto; max-height: 90vh; }
+        .modal-content h2 { margin-top: 0; font-size: 17px; color: white; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 18px; font-weight: 700; }
+        .modal-fechar-btn { cursor: pointer; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
+        .modal-fechar-btn:hover { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .comentario-form-box { background: #ffffff; padding: 18px 22px; border-top: 1px solid var(--borda-suave); display: flex; flex-direction: column; gap: 10px; }
+        .comentario-input-area { width: 100%; border: 1.5px solid #e2e8f0; padding: 10px 14px; border-radius: 10px; font-size: 13px; color: #334155; outline: none; resize: none; height: 60px; font-family: inherit; }
+        .btn-comentar { align-self: flex-end; background: linear-gradient(135deg, var(--azul-link), var(--azul-accent)); border: none; color: white; padding: 9px 22px; border-radius: 10px; font-size: 12.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 3px 10px rgba(59, 130, 246, 0.25); }
+        .modal-imagem-ampliada { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.85); display: flex; justify-content: center; align-items: center; z-index: 3000; cursor: pointer; }
+        .modal-imagem-ampliada img { max-width: 90vw; max-height: 90vh; border-radius: 10px; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <!-- TELA DE LOGIN OVERLAY INTEGRADA -->
+    <div id="telaLoginSistema">
+        <div class="login-card-container">
+            <i class="fa-solid fa-robot" style="font-size: 44px; color: var(--azul-link); margin-bottom: 16px;"></i>
+            <h2 style="margin-bottom: 22px; font-size: 20px;">Terminal Analyst Assistant</h2>
+            <form onsubmit="realizarLoginSeguro(event)">
+                <div class="form-grupo" style="text-align: left;">
+                    <label>Usu&aacute;rio</label>
+                    <input type="text" id="loginUser" class="form-input-moderno" required placeholder="Ex: lucas ou admin">
+                </div>
+                <div class="form-grupo" style="text-align: left; margin-bottom: 22px;">
+                    <label>Senha</label>
+                    <input type="password" id="loginPass" class="form-input-moderno" required placeholder="&bull;&bull;&bull;">
+                </div>
+                <button type="submit" class="btn-enviar-moderno">Autenticar Credenciais</button>
+            </form>
+            <p style="font-size: 11px; margin-top: 16px;">Dica: lucas / 123 (Analista) ou admin / 123 (Admin)</p>
+        </div>
+    </div>
+
+    <!-- COLUNA ESQUERDA -->
+    <div class="sidebar-esquerda">
+        <img src="https://api.dicebear.com/7.x/bottts/svg?seed=analyst&backgroundColor=2c3e6b" class="logo-menu-topo" alt="Logo">
+        <div class="home-topo-btn" onclick="navegarPara('telaHome')">
+            <i class="fa-solid fa-house"></i> Home
+        </div>
+        <div class="menu-items-container">
+            <div class="menu-item" id="btnMenuCad" onclick="navegarPara('telaCadastro')"><i class="fa-solid fa-user-plus"></i> Cadastro de Usu&aacute;rio</div>
+            <div class="menu-item" onclick="abrirModal('modalIncidente')"><i class="fa-solid fa-file-invoice"></i> Novo Incidente</div>
+            
+            <!-- NOVO MENU RELATÓRIOS ADICIONADO -->
+            <div class="menu-item" id="btnMenuRel" onclick="navegarPara('telaRelatorios')"><i class="fa-solid fa-chart-pie"></i> Relatórios</div>
+            
+            <div class="menu-item" id="btnMenuVer" onclick="navegarPara('telaVersao')"><i class="fa-solid fa-code-branch"></i> Vers&atilde;o / Build</div>
+            <div class="menu-item" id="btnMenuExe" onclick="navegarPara('telaExecutaveis')"><i class="fa-solid fa-upload"></i> Upload Execut&aacute;veis</div>
+            <div class="menu-item" id="btnMenuMat" onclick="navegarPara('telaMateriais')"><i class="fa-solid fa-book"></i> Material de Apoio</div>
+            <div class="menu-item" id="btnMenuChat" onclick="navegarPara('telaChat')"><i class="fa-solid fa-comment-dots"></i> Chat</div>
+        </div>
+    </div>
+
+    <!-- AREA CENTRAL -->
+    <div class="painel-central">
+        <!-- TELA 1: HOME DE PESQUISA -->
+        <div id="telaHome" class="tela-central ativa">
+            <div class="banner-central-logo-container">
+                <i class="fa-solid fa-robot" style="font-size: 38px; margin-right: 15px;"></i>
+                <h1><span>Analyst</span><span>Assistant</span></h1>
+            </div>
+            <div class="busca-container-wrapper">
+                <input type="text" id="campoPesquisa" class="input-busca-moderna" placeholder="Pesquise por TAG, descri&ccedil;&atilde;o do erro ou observa&ccedil;&atilde;o...">
+                <i class="fa-solid fa-magnifying-glass" onclick="realizarBuscaCorporativa()"></i>
+            </div>
+            <div class="abas-modulos-row">
+                <div class="aba-btn-moderno-wrapper aba-btn-wrapper-esq">
+                    <div class="aba-btn-moderno" data-modulo="Retaguarda" onclick="filtrarModulo(this)"><i class="fa-solid fa-server"></i> RETAGUARDA</div>
+                </div>
+                <div class="aba-btn-moderno-wrapper aba-btn-wrapper-cent">
+                    <div class="aba-btn-moderno" data-modulo="PDV" onclick="filtrarModulo(this)"><i class="fa-solid fa-cash-register"></i> PDV</div>
+                </div>
+                <div class="aba-btn-moderno-wrapper aba-btn-wrapper-dir">
+                    <div class="aba-btn-moderno" data-modulo="Disp. Moveis" onclick="filtrarModulo(this)"><i class="fa-solid fa-mobile-screen-button"></i> DISP. M&Oacute;VEIS</div>
+                </div>
+            </div>
+            <div id="indicadorFiltroModulo" style="display:none; align-items:center; gap:10px; margin: -14px 0 20px 2px; font-size: 13px; color: var(--texto-suave);">
+                Filtrando por m&oacute;dulo: <strong id="txtModuloFiltrado" style="color:#1e293b;"></strong>
+                <span style="cursor:pointer; color: #ef4444; font-weight:600;" onclick="limparFiltroModulo()">&times; limpar filtro</span>
+            </div>
+            <div id="containerResultadosBusca"></div>
+        </div>
+
+        <!-- TELA NOVA: DASHBOARD DE RELATÓRIOS DINÂMICOS -->
+        <div id="telaRelatorios" class="tela-central">
+            <div class="card-relatorio-dashboard">
+                <h2 style="font-size: 20px; font-weight: 700; color: #1e293b; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;"><i class="fa-solid fa-chart-line"></i> Indicadores Volumétricos de Incidentes</h2>
+                
+                <!-- Barra de Ferramentas e Filtro de Datas -->
+                <div class="relatorio-filtros-linha">
+                    <div class="relatorio-controle-grupo">
+                        <label><i class="fa-regular fa-calendar"></i> Data Inicial</label>
+                        <input type="date" id="filtroRelatorioDataInicio" class="sidebar-direita-input" onchange="processarMetricasRelatorio()">
+                    </div>
+                    <div class="relatorio-controle-grupo">
+                        <label><i class="fa-regular fa-calendar"></i> Data Final</label>
+                        <input type="date" id="filtroRelatorioDataFim" class="sidebar-direita-input" onchange="processarMetricasRelatorio()">
+                    </div>
+                    <div class="relatorio-controle-grupo">
+                        <label><i class="fa-solid fa-sliders"></i> Layout do Gráfico</label>
+                        <select id="seletorTipoGrafico" class="sidebar-direita-select" onchange="alterarLayoutGraficoRelatorio(this.value)">
+                            <option value="bar">Gráfico de Barras</option>
+                            <option value="doughnut">Gráfico de Rosca</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Container do Canvas do Chart.js -->
+                <div class="canvas-container-grafico">
+                    <canvas id="canvasChartRelatorio"></canvas>
+                </div>
+                
+                <!-- Resumo Numérico Prático -->
+                <div id="legendaNumericaRelatorio" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; margin-top: 10px; font-size: 13px; font-weight: bold; color: #334155;"></div>
+            </div>
+        </div>
+
+        <!-- TELA 2: FORMULARIO DE CADASTRO DE USUARIO -->
+        <div id="telaCadastro" class="tela-central">
+            <div class="container-painel-formulario">
+                <h2>[SYS] REGISTRAR FICHA DO ANALISTA</h2>
+                <div class="subabas-cadastro-row">
+                    <div class="subaba-btn ativa" id="subabaBtnCadastro" onclick="alternarSubAbaCadastro('cadastro')"><i class="fa-solid fa-user-pen"></i> Cadastro</div>
+                    <div class="subaba-btn" id="subabaBtnListagem" onclick="alternarSubAbaCadastro('listagem')"><i class="fa-solid fa-list"></i> Listagem</div>
+                </div>
+                <div id="subTelaCadastroForm">
+                    <form id="formUsuario" onsubmit="salvarUsuario(event)">
+                        <div class="form-linha">
+                            <div class="form-grupo"> <label>Nome Completo *</label> <input type="text" id="cadNomeCompleto" class="form-input-moderno" required placeholder="Ex: Antonio Agostinho"> </div>
+                            <div class="form-grupo"> <label>CPF *</label> <input type="text" id="cadCPF" class="form-input-moderno" required placeholder="000.000.000-00"> </div>
+                        </div>
+                        <div class="form-linha">
+                            <div class="form-grupo"> <label>E-mail Corporativo *</label> <input type="email" id="cadEmail" class="form-input-moderno" required placeholder="analista@empresa.com"> </div>
+                            <div class="form-grupo"> <label>Cargo *</label> <input type="text" id="cadCargo" class="form-input-moderno" required placeholder="Ex: Suporte T&eacute;cnico"> </div>
+                        </div>
+                        <div class="form-linha-tripla">
+                            <div class="form-grupo"> <label>Endere&ccedil;o *</label> <input type="text" id="cadEndereco" class="form-input-moderno" required placeholder="Rua / Avenida"> </div>
+                            <div class="form-grupo"> <label>N&uacute;mero *</label> <input type="text" id="cadNumero" class="form-input-moderno" required placeholder="N&ordm;"> </div>
+                            <div class="form-grupo"> <label>Telefone *</label> <input type="text" id="cadTelefone" class="form-input-moderno" required placeholder="(88) 99999-0000"> </div>
+                        </div>
+                        <div class="form-linha">
+                            <div class="form-grupo"> <label>Senha *</label> <input type="password" id="cadSenha" class="form-input-moderno" required placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"> </div>
+                            <div class="form-grupo"> <label>Confirmar Senha *</label> <input type="password" id="cadConfirmarSenha" class="form-input-moderno" required placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"> </div>
+                        </div>
+                        <div class="form-linha">
+                            <div class="form-grupo"> <label>Setor *</label> <input type="text" id="cadSetor" class="form-input-moderno" required placeholder="Ex: Suporte T&eacute;cnico"> </div>
+                            <div class="form-grupo"> <label>Ger&ecirc;ncia *</label> <input type="text" id="cadGerencia" class="form-input-moderno" required placeholder="Ex: Opera&ccedil;&otilde;es"> </div>
+                        </div>
+                        <button type="submit" class="btn-enviar-moderno">Gravar Analista</button>
+                    </form>
+                </div>
+                <div id="subTelaCadastroListagem" style="display:none;">
+                    <div id="containerListagemUsuarios"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TELA 3: VERSAO E BUILD -->
+        <div id="telaVersao" class="tela-central">
+            <div id="avisoAcessoVersao" class="painel-admin-only"><i class="fa-solid fa-lock"></i> APENAS ADMINISTRADORES PODEM ALTERAR VERS&Otilde;ES DO REPOSIT&Oacute;RIO.</div>
+        </div>
+
+        <!-- TELA 4: UPLOAD EXECUTAVEIS -->
+        <div id="telaExecutaveis" class="tela-central">
+            <div class="container-painel-formulario">
+                <h2>[SYS] INDEXAR EXECUT&Aacute;VEIS (.EXE)</h2>
+                <div class="caixa-retencao-alert"> <strong>AVISO:</strong> Todos os arquivos carregados neste reposit&oacute;rio ficar&atilde;o dispon&iacute;veis para download pelo prazo de 90 dias. Ap&oacute;s este per&iacute;odo, os pacotes ser&atilde;o exclu&iacute;dos. </div>
+                <form id="formUploadExecutavel" onsubmit="realizarUploadExecutavel(event)">
+                    <div class="form-grupo"> <label>Nome do Aplicativo *</label> <input type="text" id="exeNomeApp" class="form-input-moderno" required> </div>
+                    <div class="form-grupo"> <label>Arquivo App *</label> <input type="file" id="exeArquivo" class="form-input-moderno" required accept=".exe,.zip"> </div>
+                    <button type="submit" class="btn-enviar-moderno">Realizar Upload</button>
+                </form>
+                <div id="containerListaExecutaveis" style="margin-top:18px;"></div>
+            </div>
+        </div>
+
+        <!-- TELA 5: MATERIAL DE APOIO -->
+        <div id="telaMateriais" class="tela-central">
+            <div class="container-painel-formulario">
+                <h2>[SYS] ARQUIVAR MATERIAIS DE APOIO (.PDF)</h2>
+                <div class="caixa-retencao-alert"> <strong>AVISO:</strong> Todos os arquivos carregados neste reposit&oacute;rio ficar&atilde;o dispon&iacute;veis para download pelo prazo de 90 dias. Ap&oacute;s este per&iacute;odo, os pacotes ser&atilde;o exclu&iacute;dos. </div>
+                <form id="formUploadMaterial" onsubmit="realizarUploadMaterial(event)">
+                    <div class="form-grupo"> <label>T&iacute;tulo do Documento *</label> <input type="text" id="matTitulo" class="form-input-moderno" required> </div>
+                    <div class="form-grupo"> <label>Arquivo T&eacute;cnico *</label> <input type="file" id="matArquivo" class="form-input-moderno" required accept=".pdf"> </div>
+                    <button type="submit" class="btn-enviar-moderno">Indexar Documento</button>
+                </form>
+                <div id="containerListaMateriais" style="margin-top:18px;"></div>
+            </div>
+        </div>
+
+        <!-- TELA 6: MODULO CHAT -->
+        <div id="telaChat" class="tela-central">
+            <div class="painel-chat-modulo">
+                <div class="chat-usuarios-lista">
+                    <div class="chat-usuario-box ativo">
+                        <div class="chat-usuario-avatar"></div>
+                        <div class="chat-usuario-infos">
+                            <span class="chat-usuario-nome">Antonio Agostinho</span>
+                            <span class="chat-usuario-status"><span class="chat-status-led online"></span>Online</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-conversa-janela">
+                    <div class="chat-conversa-topo">
+                        <span>Antonio Agostinho</span>
+                        <button class="btn-chamar-atencao" onclick="chamarAtencao()" title="Chamar a aten&ccedil;&atilde;o">
+                            <i class="fa-solid fa-bell"></i> Chamar aten&ccedil;&atilde;o
+                        </button>
+                    </div>
+                    <div class="chat-mensagens-corpo" id="chatCorpoMsg">
+                        <p style="text-align:center; color:#94a3b8; font-size:12.5px;">Conectando ao chat na nuvem...</p>
+                    </div>
+                    <div class="chat-inputs-footer">
+                        <div id="emojiPickerBox" class="emoji-picker-box"></div>
+                        <div class="chat-input-container-row">
+                            <input type="text" id="inputTxtMsg" class="chat-input-field" placeholder="Enviar um message" onkeypress="escutarTecladoChat(event)">
+                            <button class="chat-btn-send" onclick="enviarMensagem()"><i class="fa-solid fa-paper-plane"></i></button>
+                        </div>
+                        <div class="chat-icones-linha">
+                            <i class="fa-regular fa-face-smile chat-icon-btn" onclick="toggleEmojiPicker()"></i>
+                            <i class="fa-solid fa-link chat-icon-btn"></i>
+                            <label for="fileChatBtn" class="chat-icon-btn"><i class="fa-solid fa-paperclip"></i></label>
+                            <input type="file" id="fileChatBtn" style="display:none;" onchange="alert('Arquivo anexado com sucesso (At&eacute; 50MB)')">
+                            <span>(at&eacute; 50 MB)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COLUNA DIREITA -->
+    <div class="sidebar-direita">
+        <div class="perfil-box-moderno">
+            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Lucas" class="perfil-avatar-img" alt="Avatar">
+            <div class="perfil-dados-txt">
+                <span class="perfil-nome" id="lblPerfilNomeDireito">Lucas Silva</span>
+                <span class="perfil-cargo" id="lblPerfilCargoDireito">Analista N2</span>
+                <div class="perfil-links">
+                    <a onclick="acionarEdicaoPerfilAtivo()">Editar perfil</a> |
+                    <a onclick="acionarLogoutSeguro()">Sair</a>
+                </div>
+            </div>
+        </div>
+        <div class="parametro-grupo-box">
+            <label>Possui Chamado</label>
+            <div class="radio-linha-container">
+                <label class="radio-item-opcao"><input type="radio" name="possuiChamado" value="sim" onclick="toggleChamadoSidebar(true)"> Sim</label>
+                <label class="radio-item-opcao"><input type="radio" name="possuiChamado" value="nao" checked onclick="toggleChamadoSidebar(false)"> N&atilde;o</label>
+            </div>
+        </div>
+        <div id="boxChamadoSidebar" class="parametro-grupo-box" style="display:none;">
+            <label>N&uacute;mero do chamado</label>
+            <input type="text" id="inputChamadoSidebar" class="sidebar-direita-input" placeholder="Ex: 10020">
+            <button class="btn-pesquisar-sidebar" onclick="pesquisarPorChamado()"><i class="fa-solid fa-magnifying-glass"></i> Pesquisar</button>
+        </div>
+        <div class="parametro-grupo-box">
+            <label>Analista</label>
+            <select id="seletorAnalistaDireito" class="sidebar-direita-select">
+                <option value="">-- Selecione --</option>
+            </select>
+            <button class="btn-pesquisar-sidebar" onclick="pesquisarPorAnalista()"><i class="fa-solid fa-magnifying-glass"></i> Pesquisar</button>
+        </div>
+        <div class="parametro-grupo-box">
+            <label>TAGs</label>
+            <textarea id="txtTagsDireita" class="sidebar-direita-textarea" placeholder="Pressione ENTER aqui para pesquisar..." onkeypress="escutarTecladoTags(event)"></textarea>
+        </div>
+    </div>
+
+    <!-- MODAL DE INCIDENTES -->
+    <div id="modalIncidente" class="modal-overlay">
+        <div class="modal-content">
+            <h2>[SYS] REGISTRAR NOVO INCIDENTE <i class="fa-solid fa-xmark modal-fechar-btn" onclick="fecharModal('modalIncidente')"></i></h2>
+            <form id="formIncidenteOuro" onsubmit="processarNovoIncidenteDoUsuario(event)">
+                <div class="form-linha">
+                    <div class="form-grupo">
+                        <label style="color:white;">M&oacute;dulo *</label>
+                        <select id="incModulo" class="form-input-moderno" style="background:rgba(0,0,0,0.3); color:white;" required>
+                            <option value="Retaguarda">Retaguarda</option>
+                            <option value="PDV">PDV</option>
+                            <option value="Disp. Moveis">Disp. Moveis</option>
+                        </select>
+                    </div>
+                    <div class="form-grupo"> <label style="color:white;">Vers&atilde;o e Build *</label> <input type="text" id="incVersao" class="form-input-moderno" style="background:rgba(0,0,0,0.3);" required value="V.2.1 (Build 1.0)"> </div>
+                </div>
+                <div class="form-linha">
+                    <div class="form-grupo"> <label style="color:white;">TAG *</label> <input type="text" id="incTag" class="form-input-moderno" style="background:rgba(0,0,0,0.3);" required placeholder="Ex: memoria"> </div>
+                    <div class="form-grupo">
+                        <label style="color:white;">Prioridade *</label>
+                        <select id="incPrioridade" class="form-input-moderno" style="background:rgba(0,0,0,0.3); color:white;" required>
+                            <option value="Baixa">Baixa</option>
+                            <option value="Media">M&eacute;dia</option>
+                            <option value="Alta">Alta</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-linha">
+                    <div class="form-grupo">
+                        <label style="color:white;">Possui chamado? *</label>
+                        <select id="incPossuiChamado" class="form-input-moderno" style="background:rgba(0,0,0,0.3); color:white;" required onchange="toggleAnalistaAcompanhamento(this.value)">
+                            <option value="nao">N&atilde;o</option><option value="sim">Sim</option>
+                        </select>
+                    </div>
+                    <div class="form-grupo" id="boxNumeroChamadoInc" style="display: none;"> <label style="color:var(--azul-link);">N&ordm; do Chamado *</label> <input type="text" id="incNumeroChamado" class="form-input-moderno" style="background:rgba(0,0,0,0.3);" placeholder="Ex: 10020"> </div>
+                </div>
+                <div class="form-grupo"> <label style="color:white;">Analista Respons&aacute;vel</label> <input type="text" id="incAnalistaNome" class="form-input-moderno" style="background:rgba(0,0,0,0.3);" placeholder="Nome do Analista"> </div>
+                <div class="form-grupo"> <label style="color:white;">Aplica&ccedil;&atilde;o *</label> <input type="text" id="incAplicacao" class="form-input-moderno" style="background:rgba(0,0,0,0.3);" required placeholder="Ex: Usado para cadastrar produto"> </div>
+                <div class="form-grupo"> <label style="color:white;">Descri&ccedil;&atilde;o do erro *</label> <textarea id="incDescricao" class="form-input-moderno" style="background:rgba(0,0,0,0.3);" rows="2" required></textarea> </div>
+                <div class="form-grupo"> <label style="color:white;">Solu&ccedil;&atilde;o aplicada *</label> <textarea id="incSolucao" class="form-input-moderno" style="background:rgba(0,0,0,0.3);" rows="2" required></textarea> </div>
+                <div class="form-grupo"> <label style="color:white;">Observa&ccedil;&atilde;o *</label> <textarea id="incObservacao" class="form-input-moderno" style="background:rgba(0,0,0,0.3);" rows="2" required placeholder="Verificar se o par&acirc;metro esta habilitado corretamente."></textarea> </div>
+                <div class="form-grupo"> <label style="color:white;">Anexar imagens</label> <input type="file" id="incImagem" class="form-input-moderno" style="background:rgba(0,0,0,0.3);" accept="image/*" multiple> </div>
+                <button type="submit" class="btn-enviar-moderno">Gravar Incidente</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ===== CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE =====
+        const firebaseConfig = {
+            apiKey: "AIzaSyDtNn1Ao5t0Pzwp6vdRtEjvajo_ej-3128",
+            authDomain: "analyst-assistant-d4ab7.firebaseapp.com",
+            projectId: "analyst-assistant-d4ab7",
+            storageBucket: "analyst-assistant-d4ab7.firebasestorage.app",
+            messagingSenderId: "231160444101",
+            appId: "1:231160444101:web:85d561f3f4c0c2fafc2cac",
+            measurementId: "G-S1C2WQ036C"
+        };
+        const appFirebase = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storageRef = firebase.storage();
+
+        const COL_INCIDENTES = 'incidentes';
+        const COL_USUARIOS = 'usuarios';
+        const COL_MENSAGENS = 'chat_mensagens';
+        const COL_MATERIAIS = 'materiais';
+        const COL_EXECUTAVEIS = 'executaveis';
+
+        let moduloFiltroAtivo = null;
+        let usuariosCadastrados = [];
+        let repositorioIncidentes = [];
+        
+        // Instância global do objeto gráfico Chart.js
+        let instanciaGraficoRelatorio = null;
+        let tipoGraficoAtual = 'bar'; // Modo padrão: barras
+
+        let usuarioSessaoAtiva = {
+            nome: "Lucas Silva",
+            cpf: "111.222.333-44",
+            email: "lucas.silva@suporte.com",
+            cargo: "Analista N2",
+            endereco: "Av. do Suporte Técnico",
+            numero: "1020",
+            telefone: "(88) 98888-7777"
+        };
+
+        function formatarDataHora(data) {
+            return data.toLocaleDateString('pt-BR') + ' ' + data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function acionarEdicaoPerfilAtivo() {
+            document.getElementById('cadNomeCompleto').value = usuarioSessaoAtiva.nome;
+            document.getElementById('cadCPF').value = usuarioSessaoAtiva.cpf;
+            document.getElementById('cadEmail').value = usuarioSessaoAtiva.email;
+            document.getElementById('cadCargo').value = usuarioSessaoAtiva.cargo;
+            document.getElementById('cadEndereco').value = usuarioSessaoAtiva.endereco;
+            document.getElementById('cadNumero').value = usuarioSessaoAtiva.numero;
+            document.getElementById('cadTelefone').value = usuarioSessaoAtiva.telefone;
+            const fichaExistente = usuariosCadastrados.find(u => u.cpf === usuarioSessaoAtiva.cpf);
+            document.getElementById('cadSenha').value = fichaExistente ? fichaExistente.senha : '';
+            document.getElementById('cadConfirmarSenha').value = fichaExistente ? fichaExistente.senha : '';
+            document.getElementById('cadSetor').value = fichaExistente ? fichaExistente.setor : '';
+            document.getElementById('cadGerencia').value = fichaExistente ? fichaExistente.gerencia : '';
+            gerenciarTravaCampoCargo();
+            alternarSubAbaCadastro('cadastro');
+            navegarPara('telaCadastro');
+        }
+
+        function gerenciarTravaCampoCargo() {
+            const campoCargo = document.getElementById('cadCargo');
+            if (usuarioSessaoAtiva.cargo === "Administrador") { campoCargo.disabled = false; } else { campoCargo.disabled = true; }
+        }
+
+        function gerenciarNivelAcessoAutomatico(perfil) {
+            usuarioSessaoAtiva.cargo = perfil;
+            document.getElementById('lblPerfilCargoDireito').textContent = perfil;
+            document.getElementById('cadCargo').value = perfil;
+            gerenciarTravaCampoCargo();
+        }
+
+        function acionarLogoutSeguro() { document.getElementById('telaLoginSistema').style.display = 'flex'; }
+
+        function realizarLoginSeguro(e) {
+            e.preventDefault();
+            const campoUser = document.getElementById('loginUser');
+            const campoPass = document.getElementById('loginPass');
+            const u = campoUser.value.trim().toLowerCase();
+            const p = campoPass.value.trim();
+            if (p === '123' && (u === 'lucas' || u === 'admin')) {
+                if (u === 'admin') {
+                    usuarioSessaoAtiva.nome = "Administrador Master";
+                    usuarioSessaoAtiva.cargo = "Administrador";
+                } else {
+                    usuarioSessaoAtiva.nome = "Lucas Silva";
+                    usuarioSessaoAtiva.cargo = "Analista N2";
+                }
+                document.getElementById('lblPerfilNomeDireito').textContent = usuarioSessaoAtiva.nome;
+                document.getElementById('lblPerfilCargoDireito').textContent = usuarioSessaoAtiva.cargo;
+                document.getElementById('telaLoginSistema').style.display = 'none';
+                campoUser.value = '';
+                campoPass.value = '';
+                navegarPara('telaHome');
+            } else {
+                alert('[Erro] Credenciais inválidas corporativas! Verifique o usuário e a senha.');
+            }
+        }
+
+        let resultadosAtuaisBusca = [];
+        function realizarBuscaCorporativa() {
+            const termo = document.getElementById('campoPesquisa').value.trim().toLowerCase();
+            const tagBusca = document.getElementById('txtTagsDireita').value.trim().toLowerCase();
+            let resultados = repositorioIncidentes.filter(inc => {
+                const tags = (inc.tags || '').toLowerCase();
+                const prioridade = (inc.prioridade || '').toLowerCase();
+                const descricao = (inc.descricao || '').toLowerCase();
+                const bateTermo = !termo || descricao.includes(termo) || tags.includes(termo) || prioridade.includes(termo);
+                const bateTag = !tagBusca || tags.includes(tagBusca);
+                const bateModulo = !moduloFiltroAtivo || inc.modulo === moduloFiltroAtivo;
+                return bateTermo && bateTag && bateModulo;
+            });
+            resultadosAtuaisBusca = resultados;
+            renderizarListaIncidentes(resultados);
+        }
+
+        function renderizarListaIncidentes(resultados) {
+            const container = document.getElementById('containerResultadosBusca');
+            if (!resultados || resultados.length === 0) {
+                container.innerHTML = `<p style="text-align:center; margin-top:20px; font-size:14px; color:#94a3b8;">[Aviso] Nenhum incidente correspondente encontrado.</p>`;
+                return;
+            }
+            const ordenados = [...resultados].sort((a, b) => (b.timestampCadastro || 0) - (a.timestampCadastro || 0));
+            container.innerHTML = `
+                <div class="lista-incidentes-wrapper">
+                    <div class="lista-incidentes-header" style="grid-template-columns: 44px 2fr 1fr 1fr 1fr;">
+                        <span></span>
+                        <span>Descrição</span>
+                        <span>Módulo</span>
+                        <span>Cadastrado em</span>
+                        <span>Última atualização</span>
+                    </div>
+                    <div>
+                        ${ordenados.map(inc => {
+                            const thumbHtml = inc.imagens && inc.imagens.length > 0
+                                ? `<img class="lista-incidentes-thumb" src="${inc.imagens[0]}" alt="thumb">`
+                                : `<div class="lista-incidentes-thumb-placeholder"><i class="fa-regular fa-image"></i></div>`;
+                            return `
+                            <div class="lista-incidentes-linha" style="grid-template-columns: 44px 2fr 1fr 1fr 1fr;" onclick="exibirDetalheIncidente('${inc.id}')">
+                                ${thumbHtml}
+                                <span class="lista-incidentes-titulo">${inc.descricao}</span>
+                                <span class="lista-incidentes-modulo-tag">${inc.modulo}</span>
+                                <span class="lista-incidentes-data">${inc.dataCadastro || '-'}</span>
+                                <span class="lista-incidentes-data">${inc.ultimaAtualizacao || '-'}</span>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        let idIncidenteDetalheAberto = null;
+        function exibirDetalheIncidente(id) {
+            idIncidenteDetalheAberto = id;
+            const inc = repositorioIncidentes.find(i => i.id === id);
+            if (!inc) return;
+            const container = document.getElementById('containerResultadosBusca');
+            const imagensHtml = inc.imagens && inc.imagens.length > 0
+                ? inc.imagens.map(src => `<img src="${src}" alt="Imagem anexada" onclick="ampliarImagem(this.src)">`).join('')
+                : `<span class="galeria-vazia"><i class="fa-regular fa-image"></i> Nenhuma imagem anexada.</span>`;
+            container.innerHTML = `
+                <button class="btn-voltar-lista" onclick="idIncidenteDetalheAberto=null; renderizarListaIncidentes(resultadosAtuaisBusca)"><i class="fa-solid fa-arrow-left"></i> Voltar para a lista</button>
+                <div class="card-resultado-busca">
+                    <div class="card-busca-corpo">
+                        <h2>[CARD DE INCIDENTE] ${inc.codigoIncidente || ''} - ${inc.descricao.toUpperCase()}</h2>
+                        <p><strong>Módulo:</strong> ${inc.modulo}</p>
+                        <p><strong>Prioridade:</strong> ${inc.prioridade || '-'}</p>
+                        <p><strong>Versão e Build:</strong> ${inc.versao}</p>
+                        <p><strong>Possui chamado:</strong> ${inc.possuiChamado} ${inc.numeroChamado ? '(Nº ' + inc.numeroChamado + ')' : ''}</p>
+                        <p><strong>Analista:</strong> ${inc.analistaNome || '-'}</p>
+                        <p><strong>Aplicação:</strong> ${inc.aplicacao}</p>
+                        <p><strong>Descrição do erro:</strong> ${inc.descricao}</p>
+                        <p><strong>Solução aplicada:</strong> ${inc.solucao}</p>
+                        <p><strong>Observação:</strong> ${inc.observacao}</p>
+                        <p><strong>Cadastrado em:</strong> ${inc.dataCadastro || '-'}</p>
+                        <p><strong>Última atualização:</strong> ${inc.ultimaAtualizacao || '-'}</p>
+                    </div>
+                    <div class="galeria-imagens-wrapper">
+                        ${imagensHtml}
+                    </div>
+                    <div class="card-busca-comentarios-box">
+                        ${inc.comentarios.map(com => `<div class="comentario-line"><i class="fa-solid fa-comment"></i> ${com}</div>`).join('')}
+                    </div>
+                    <div class="comentario-form-box">
+                        <label><i class="fa-solid fa-pen-to-square"></i> Adicionar comentário</label>
+                        <textarea id="novoComentarioTexto" class="comentario-input-area" placeholder="Descreva como resolveu o erro ou adicione uma observação..."></textarea>
+                        <button class="btn-comentar" onclick="adicionarComentario('${inc.id}')"><i class="fa-solid fa-paper-plane"></i> Publicar</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function escutarTecladoTags(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const valorTag = document.getElementById('txtTagsDireita').value.trim();
+                if(valorTag) {
+                    document.getElementById('campoPesquisa').value = valorTag;
+                    realizarBuscaCorporativa();
+                }
+            }
+        }
+
+        function lerArquivoComoBase64(file) {
+            return new Promise(function(resolve, reject) {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function() { resolve(reader.result); };
+                reader.onerror = function(error) { reject(error); };
+            });
+        }
+
+        function processarNovoIncidenteDoUsuario(e) {
+            e.preventDefault();
+            const modulo = document.getElementById('incModulo').value;
+            const versao = document.getElementById('incVersao').value;
+            const tag = document.getElementById('incTag').value;
+            const prioridade = document.getElementById('incPrioridade').value;
+            const aplicacao = document.getElementById('incAplicacao').value;
+            const descricao = document.getElementById('incDescricao').value;
+            const solucao = document.getElementById('incSolucao').value;
+            const observacao = document.getElementById('incObservacao').value;
+            const possuiCh = document.getElementById('incPossuiChamado').value;
+            const numeroChamado = document.getElementById('incNumeroChamado').value;
+            const analistaAcomp = document.getElementById('incAnalistaNome').value;
+            const arquivos = document.getElementById('incImagem').files;
+            const btnSubmit = e.target.querySelector('button[type="submit"]');
+            
+            if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'Processando imagens Base64...'; }
+
+            const codigoIncidente = '#' + String(repositorioIncidentes.length + 1).padStart(4, '0');
+            const promessasConversao = Array.from(arquivos).map(function(file) { return lerArquivoComoBase64(file); });
+
+            Promise.all(promessasConversao).then(function(base64Strings) {
+                if (btnSubmit) { btnSubmit.textContent = 'Gravando no Firestore...'; }
+                var agora = new Date();
+                
+                return db.collection(COL_INCIDENTES).add({
+                    tags: (tag + ", " + modulo + ", " + aplicacao + ", " + descricao).toLowerCase(),
+                    prioridade: prioridade,
+                    codigoIncidente: codigoIncidente,
+                    numeroChamado: possuiCh === 'sim' ? numeroChamado : '',
+                    descricao: descricao,
+                    observacao: observacao,
+                    modulo: modulo,
+                    versao: versao,
+                    possuiChamado: possuiCh === 'sim' ? 'Sim' : 'Não',
+                    analistaNome: analistaAcomp,
+                    aplicacao: aplicacao,
+                    solucao: solucao,
+                    imagens: base64Strings,
+                    timestampCadastro: agora.getTime(),
+                    dataCadastro: formatarDataHora(agora),
+                    ultimaAtualizacao: formatarDataHora(agora),
+                    comentarios: [
+                        '<strong>Acompanhamento:</strong> Cadastro inicial realizado por ' + usuarioSessaoAtiva.nome + '.',
+                        '<strong>Status:</strong> Catalogado com sucesso via Base64 nativo.'
+                    ]
+                });
+            }).then(function() {
+                alert('[SYS-SUCCESS] Novo incidente catalogado na nuvem! Código: ' + codigoIncidente);
+                fecharModal('modalIncidente');
+                document.getElementById('formIncidenteOuro').reset();
+                toggleAnalistaAcompanhamento('nao');
+                document.getElementById('campoPesquisa').value = descricao;
+                realizarBuscaCorporativa();
+            }).catch(function(erro) {
+                console.error('Erro ao salvar incidente no Firebase:', erro);
+                alert('[Erro] Não foi possível salvar o incidente na nuvem: ' + erro.message);
+            }).finally(function() {
+                if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = 'Gravar Incidente'; }
+            });
+        }
+
+        // ================================================================
+        // ===== ENGINE MOTOR DE RELATÓRIOS (CHART.JS INTERLIGADO) =====
+        // ================================================================
+        function processarMetricasRelatorio() {
+            const inputInicio = document.getElementById('filtroRelatorioDataInicio').value;
+            const inputFim = document.getElementById('filtroRelatorioDataFim').value;
+
+            let dataInicioMs = inputInicio ? new Date(inputInicio + 'T00:00:00').getTime() : 0;
+            let dataFimMs = inputFim ? new Date(inputFim + 'T23:59:59').getTime() : Infinity;
+
+            // Contadores por tipo de módulo
+            let contadores = { 'PDV': 0, 'Retaguarda': 0, 'Disp. Moveis': 0 };
+
+            repositorioIncidentes.forEach(function(inc) {
+                const ts = inc.timestampCadastro || 0;
+                if (ts >= dataInicioMs && ts <= dataFimMs) {
+                    if (contadores[inc.modulo] !== undefined) {
+                        contadores[inc.modulo]++;
+                    }
+                }
+            });
+
+            // Atualiza a legenda descritiva em texto
+            document.getElementById('legendaNumericaRelatorio').innerHTML = `
+                <div style="background:#f1f5f9; padding:8px; border-radius:6px; border-left:4px solid #3b82f6;">PDV: ${contadores['PDV']}</div>
+                <div style="background:#f1f5f9; padding:8px; border-radius:6px; border-left:4px solid #6366f1;">Retaguarda: ${contadores['Retaguarda']}</div>
+                <div style="background:#f1f5f9; padding:8px; border-radius:6px; border-left:4px solid #f59e0b;">Disp. Móveis: ${contadores['Disp. Moveis']}</div>
+            `;
+
+            renderizarEstruturaGrafico(contadores['PDV'], contadores['Retaguarda'], contadores['Disp. Moveis']);
+        }
+
+        function renderizarEstruturaGrafico(pdvCount, retaguardaCount, moveisCount) {
+            const ctxCanvas = document.getElementById('canvasChartRelatorio').getContext('2d');
+            
+            // Destrói a instância anterior para evitar fantasmas ou bugs ao passar o mouse
+            if (instanciaGraficoRelatorio) {
+                instanciaGraficoRelatorio.destroy();
+            }
+
+            const dadosConfig = {
+                labels: ['PDV', 'Retaguarda', 'Disp. Móveis'],
+                datasets: [{
+                    label: 'Quantidade de Incidentes',
+                    data: [pdvCount, retaguardaCount, moveisCount],
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.75)',  /* Azul Link - PDV */
+                        'rgba(99, 102, 241, 0.75)',  /* Azul Accent - Retaguarda */
+                        'rgba(245, 158, 11, 0.75)'   /* Laranja Alerta - Mídias/Móveis */
+                    ],
+                    borderColor: ['#3b82f6', '#6366f1', '#f59e0b'],
+                    borderWidth: 1.5
+                }]
+            };
+
+            const opcoesConfig = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: tipoGraficoAtual === 'doughnut',
+                        position: 'bottom'
+                    }
+                },
+                scales: tipoGraficoAtual === 'bar' ? {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                } : {}
+            };
+
+            instanciaGraficoRelatorio = new Chart(ctxCanvas, {
+                type: tipoGraficoAtual,
+                data: dadosConfig,
+                options: opcoesConfig
+            });
+        }
+
+        function alterarLayoutGraficoRelatorio(tipo) {
+            tipoGraficoAtual = tipo;
+            processarMetricasRelatorio();
+        }
+
+        function toggleAnalistaAcompanhamento(valor) {
+            const boxChamado = document.getElementById('boxNumeroChamadoInc');
+            const inputChamado = document.getElementById('incNumeroChamado');
+            if (valor === 'sim') { boxChamado.style.display = 'flex'; inputChamado.required = true; } else { boxChamado.style.display = 'none'; inputChamado.required = false; inputChamado.value = ''; }
+        }
+        document.getElementById('campoPesquisa').addEventListener('keypress', function (e) { if (e.key === 'Enter') realizarBuscaCorporativa(); });
+        
+        function navegarPara(idTela) {
+            document.querySelectorAll('.tela-central').forEach(t => t.classList.remove('ativa'));
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('ativo'));
+            document.getElementById(idTela).classList.add('ativa');
+            
+            if(idTela === 'telaCadastro') document.getElementById('btnMenuCad').classList.add('ativo');
+            if(idTela === 'telaRelatorios') {
+                document.getElementById('btnMenuRel').classList.add('ativo');
+                // Recalcula as métricas do gráfico com os dados mais recentes da nuvem ao entrar na tela
+                setTimeout(processarMetricasRelatorio, 50);
+            }
+            if(idTela === 'telaVersao') document.getElementById('btnMenuVer').classList.add('ativo');
+            if(idTela === 'telaExecutaveis') document.getElementById('btnMenuExe').classList.add('ativo');
+            if(idTela === 'telaMateriais') document.getElementById('btnMenuMat').classList.add('ativo');
+            if(idTela === 'telaChat') document.getElementById('btnMenuChat').classList.add('ativo');
+        }
+        function abrirModal(idModal) { document.getElementById(idModal).classList.add('ativo'); }
+        function fecharModal(id) { document.getElementById(id).classList.remove('ativo'); }
+        
+        function filtrarModulo(btn) {
+            const modulo = btn.dataset.modulo;
+            if (moduloFiltroAtivo === modulo) { moduloFiltroAtivo = null; } else { moduloFiltroAtivo = modulo; }
+            document.querySelectorAll('.aba-btn-moderno').forEach(b => b.classList.remove('ativa'));
+            if (moduloFiltroAtivo) { btn.classList.add('ativa'); }
+            atualizarIndicadorFiltroModulo();
+            realizarBuscaCorporativa();
+        }
+        function limparFiltroModulo() { moduloFiltroAtivo = null; document.querySelectorAll('.aba-btn-moderno').forEach(b => b.classList.remove('ativa')); atualizarIndicadorFiltroModulo(); realizarBuscaCorporativa(); }
+        function atualizarIndicadorFiltroModulo() {
+            const indicador = document.getElementById('indicadorFiltroModulo');
+            const texto = document.getElementById('txtModuloFiltrado');
+            if (moduloFiltroAtivo) { texto.textContent = moduloFiltroAtivo; indicador.style.display = 'flex'; } else { indicador.style.display = 'none'; }
+        }
+
+        function realizarUploadExecutavel(e) {
+            e.preventDefault();
+            const nomeApp = document.getElementById('exeNomeApp').value;
+            const arquivo = document.getElementById('exeArquivo').files[0];
+            if (!arquivo) return;
+            const btnSubmit = e.target.querySelector('button[type="submit"]');
+            if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'Enviando...'; }
+            const caminho = 'executaveis/' + Date.now() + '_' + arquivo.name;
+            const refArquivo = storageRef.ref().child(caminho);
+            refArquivo.put(arquivo).then(function() { return refArquivo.getDownloadURL(); }).then(function(url) {
+                return db.collection(COL_EXECUTAVEIS).add({ nomeApp: nomeApp, nomeArquivo: arquivo.name, url: url, enviadoPor: usuarioSessaoAtiva.nome, dataUpload: formatarDataHora(new Date()) });
+            }).then(function() { alert('Arquivo indexado com sucesso na nuvem!'); document.getElementById('formUploadExecutavel').reset(); }).catch(function(erro) { alert('[Erro] Não foi possível enviar o arquivo: ' + erro.message); }).finally(function() { if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = 'Realizar Upload'; } });
+        }
+
+        function realizarUploadMaterial(e) {
+            e.preventDefault();
+            const titulo = document.getElementById('matTitulo').value;
+            const arquivo = document.getElementById('matArquivo').files[0];
+            if (!arquivo) return;
+            const btnSubmit = e.target.querySelector('button[type="submit"]');
+            if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'Enviando...'; }
+            const caminho = 'materiais/' + Date.now() + '_' + arquivo.name;
+            const refArquivo = storageRef.ref().child(caminho);
+            refArquivo.put(arquivo).then(function() { return refArquivo.getDownloadURL(); }).then(function(url) {
+                return db.collection(COL_MATERIAIS).add({ titulo: titulo, nomeArquivo: arquivo.name, url: url, enviadoPor: usuarioSessaoAtiva.nome, dataUpload: formatarDataHora(new Date()) });
+            }).then(function() { alert('Documento indexado com sucesso na nuvem!'); document.getElementById('formUploadMaterial').reset(); }).catch(function(erro) { alert('[Erro] Não foi possível enviar o arquivo: ' + erro.message); }).finally(function() { if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = 'Indexar Documento'; } });
+        }
+
+        function renderizarListaExecutaveis(lista) {
+            const container = document.getElementById('containerListaExecutaveis');
+            if (!container) return; if (!lista || lista.length === 0) { container.innerHTML = ''; return; }
+            container.innerHTML = lista.map(function(item) { return '<div class="usuario-linha-listagem"><div class="usuario-linha-info"><strong>' + item.nomeApp + '</strong><span>' + item.nomeArquivo + ' &middot; enviado por ' + item.enviadoPor + ' em ' + item.dataUpload + '</span></div><a href="' + item.url + '" target="_blank" class="usuario-linha-tag" style="text-decoration:none;">Baixar</a></div>'; }).join('');
+        }
+
+        function renderizarListaMateriais(lista) {
+            const container = document.getElementById('containerListaMateriais');
+            if (!container) return; if (!lista || lista.length === 0) { container.innerHTML = ''; return; }
+            container.innerHTML = lista.map(function(item) { return '<div class="usuario-linha-listagem"><div class="usuario-linha-info"><strong>' + item.titulo + '</strong><span>' + item.nomeArquivo + ' &middot; enviado por ' + item.enviadoPor + ' em ' + item.dataUpload + '</span></div><a href="' + item.url + '" target="_blank" class="usuario-linha-tag" style="text-decoration:none;">Baixar</a></div>'; }).join('');
+        }
+
+        function enviarMensagem() {
+            const input = document.getElementById('inputTxtMsg'); const texto = input.value.trim(); if (!texto) return; input.value = ''; fecharEmojiPicker();
+            db.collection(COL_MENSAGENS).add({ texto: texto, remetente: usuarioSessaoAtiva.nome, timestampEnvio: Date.now() }).catch(function(erro) { alert('[Erro] Não foi possível enviar a mensagem: ' + erro.message); });
+        }
+        function escutarTecladoChat(e) { if (e.key === 'Enter') { e.preventDefault(); enviarMensagem(); } }
+        function addEmoji(emoji) { const input = document.getElementById('inputTxtMsg'); input.value += emoji; input.focus(); }
+
+        const listaEmojisDisponiveis = ['😀','😂','😊','😉','😍','😘','😎','🤔','😅','😢','😡','👍','👎','🙏','👏','🎉','🔥','❤️','💯','✅','⚠️','🚀','🐛','💻','☕','⏰','📎','📌'];
+        function montarEmojiPicker() { const box = document.getElementById('emojiPickerBox'); box.innerHTML = listaEmojisDisponiveis.map(function(emj) { return '<span class="emoji-picker-item" onclick="addEmoji(\''+emj+'\')">'+emj+'</span>'; }).join(''); }
+        function toggleEmojiPicker() { const box = document.getElementById('emojiPickerBox'); if (box.children.length === 0) montarEmojiPicker(); box.classList.toggle('aberto'); }
+        function fecharEmojiPicker() { document.getElementById('emojiPickerBox').classList.remove('aberto'); }
+        document.addEventListener('click', function(e) { const box = document.getElementById('emojiPickerBox'); if (!box) return; const iconeEmoji = document.querySelector('.fa-face-smile'); if (box.classList.contains('aberto') && !box.contains(e.target) && e.target !== iconeEmoji) { fecharEmojiPicker(); } });
+
+        function tocarSomChamarAtencao() {
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext; const ctx = new AudioCtx(); const frequencias = [880, 660, 880, 660];
+                frequencias.forEach(function(freq, indice) {
+                    const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.type = 'square'; osc.frequency.value = freq; const inicio = ctx.currentTime + (indice * 0.12); gain.gain.setValueAtTime(0.001, inicio); gain.gain.exponentialRampToValueAtTime(0.15, inicio + 0.02); gain.gain.exponentialRampToValueAtTime(0.001, inicio + 0.1); osc.connect(gain); gain.connect(ctx.destination); osc.start(inicio); osc.stop(inicio + 0.11);
+                });
+            } catch (erro) { console.warn('Não foi possível reproduzir o som de chamar atenção:', erro); }
+        }
+        function chamarAtencao() {
+            tocarSomChamarAtencao(); document.body.classList.add('tela-tremendo'); setTimeout(function() { document.body.classList.remove('tela-tremendo'); }, 1000); const corpo = document.getElementById('chatCorpoMsg'); const aviso = document.createElement('div'); aviso.className = 'chat-balao sistema'; aviso.innerHTML = usuarioSessaoAtiva.nome + ' chamou a atenção! 🔔'; corpo.appendChild(aviso); corpo.scrollTop = corpo.scrollHeight;
+        }
+
+        function salvarUsuario(e) {
+            e.preventDefault(); const senha = document.getElementById('cadSenha').value; const confirmarSenha = document.getElementById('cadConfirmarSenha').value; if (senha !== confirmarSenha) { alert('[Erro] As senhas informadas não coincidem. Verifique e tente novamente.'); return; }
+            const dadosFicha = { nome: document.getElementById('cadNomeCompleto').value, cpf: document.getElementById('cadCPF').value, email: document.getElementById('cadEmail').value, cargo: document.getElementById('cadCargo').value, endereco: document.getElementById('cadEndereco').value, numero: document.getElementById('cadNumero').value, telefone: document.getElementById('cadTelefone').value, senha: senha, setor: document.getElementById('cadSetor').value, gerencia: document.getElementById('cadGerencia').value };
+            const btnSubmit = e.target.querySelector('button[type="submit"]'); if (btnSubmit) { btnSubmit.disabled = true; btnSubmit.textContent = 'Salvando na nuvem...'; }
+            db.collection(COL_USUARIOS).doc(dadosFicha.cpf).set(dadosFicha, { merge: true }).then(function() { alert('Ficha do analista salva com sucesso na nuvem.'); navegarPara('telaHome'); }).catch(function(erro) { alert('[Erro] Não foi possível salvar a ficha na nuvem: ' + erro.message); }).finally(function() { if (btnSubmit) { btnSubmit.disabled = false; btnSubmit.textContent = 'Gravar Analista'; } });
+        }
+        
+        function alternarSubAbaCadastro(aba) {
+            const btnCadastro = document.getElementById('subabaBtnCadastro'); const btnListagem = document.getElementById('subabaBtnListagem'); const painelForm = document.getElementById('subTelaCadastroForm'); const painelListagem = document.getElementById('subTelaCadastroListagem');
+            if (aba === 'listagem') { btnListagem.classList.add('ativa'); btnCadastro.classList.remove('ativa'); painelForm.style.display = 'none'; painelListagem.style.display = 'block'; renderizarListagemUsuarios(); } else { btnCadastro.classList.add('ativa'); btnListagem.classList.remove('ativa'); painelListagem.style.display = 'none'; painelForm.style.display = 'block'; }
+        }
+        function renderizarListagemUsuarios() { const container = document.getElementById('containerListagemUsuarios'); if (!usuariosCadastrados || usuariosCadastrados.length === 0) { container.innerHTML = `<p style="text-align:center; color: rgba(255,255,255,0.7); font-size:14px;">Nenhum usuário cadastrado ainda.</p>`; return; } container.innerHTML = usuariosCadastrados.map(u => `<div class="usuario-linha-listagem"><div class="usuario-linha-info"><strong>${u.nome}</strong><span>${u.cargo} &middot; ${u.setor || '-'} / ${u.gerencia || '-'} &middot; ${u.email}</span></div><div class="usuario-linha-tag">${u.cpf}</div></div>`).join(''); }
+        function toggleChamadoSidebar(mostrar) { const box = document.getElementById('boxChamadoSidebar'); box.style.display = mostrar ? 'flex' : 'none'; if (!mostrar) { document.getElementById('inputChamadoSidebar').value = ''; } }
+        
+        function pesquisarPorChamado() { const numero = document.getElementById('inputChamadoSidebar').value.trim(); if (!numero) { alert('[Aviso] Informe o número do chamado para pesquisar.'); return; } const resultados = repositorioIncidentes.filter(inc => inc.numeroChamado && inc.numeroChamado === numero); navegarPara('telaHome'); document.getElementById('campoPesquisa').value = ''; resultadosAtuaisBusca = resultados; renderizarListaIncidentes(resultados); }
+        function pesquisarPorAnalista() { const nome = document.getElementById('seletorAnalistaDireito').value; if (!nome) { alert('[Aviso] Selecione um analista para pesquisar.'); return; } const resultados = repositorioIncidentes.filter(inc => inc.analistaNome && inc.analistaNome.toLowerCase().includes(nome.toLowerCase())); navegarPara('telaHome'); document.getElementById('campoPesquisa').value = ''; resultadosAtuaisBusca = resultados; renderizarListaIncidentes(resultados); }
+        function popularSeletorAnalistas() { const select = document.getElementById('seletorAnalistaDireito'); const valorAtual = select.value; select.innerHTML = '<option value="">-- Selecione --</option>'; usuariosCadastrados.forEach(u => { const opt = document.createElement('option'); opt.value = u.nome; opt.textContent = u.nome + ' (' + u.cargo + ')'; select.appendChild(opt); }); if (valorAtual) select.value = valorAtual; }
+        popularSeletorAnalistas();
+
+        function adicionarComentario(idIncidente) {
+            const textarea = document.getElementById('novoComentarioTexto'); const texto = textarea.value.trim(); if (!texto) { alert('[Aviso] Digite um comentário antes de publicar.'); return; }
+            const inc = repositorioIncidentes.find(i => i.id === idIncidente); if (!inc) return; const agora = new Date(); const dataFormatada = formatarDataHora(agora); const novoComentario = '<strong>' + usuarioSessaoAtiva.nome + ':</strong> ' + texto + ' <em style="color:#64748b; font-size:11px;">(' + dataFormatada + ')</em>';
+            db.collection(COL_INCIDENTES).doc(idIncidente).update({ comentarios: firebase.firestore.FieldValue.arrayUnion(novoComentario), ultimaAtualizacao: dataFormatada }).then(function() { textarea.value = ''; }).catch(function(erro) { alert('[Erro] Não foi possível publicar o comentário na nuvem: ' + erro.message); });
+        }
+
+        function ampliarImagem(src) { var overlay = document.createElement('div'); overlay.className = 'modal-imagem-ampliada'; overlay.innerHTML = '<img src="' + src + '" alt="Imagem ampliada">'; overlay.onclick = function() { document.body.removeChild(overlay); }; document.body.appendChild(overlay); }
+
+        function renderizarMensagensChat(mensagens) {
+            const corpo = document.getElementById('chatCorpoMsg'); if (!corpo) return; if (mensagens.length === 0) { corpo.innerHTML = '<p style="text-align:center; color:#94a3b8; font-size:12.5px;">Nenhuma mensagem ainda. Diga oi! 👋</p>'; return; }
+            corpo.innerHTML = mensagens.map(function(msg) { const classe = msg.remetente === usuarioSessaoAtiva.nome ? 'enviado' : 'recebido'; const hora = new Date(msg.timestampEnvio || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); return '<div class="chat-balao ' + classe + '">' + msg.texto + '<span class="chat-balao-tempo">' + hora + '</span></div>'; }).join(''); corpo.scrollTop = corpo.scrollHeight;
+        }
+
+        function iniciarSincronizacaoFirebase() {
+            // --- Sincronização de Incidentes Ativa ---
+            db.collection(COL_INCIDENTES).onSnapshot(function(snapshot) {
+                repositorioIncidentes = snapshot.docs.map(function(doc) {
+                    return Object.assign({ id: doc.id }, doc.data());
+                });
+
+                // Se a tela ativa atual for a de Relatórios, força a atualização em tempo real do gráfico
+                if (document.getElementById('telaRelatorios').classList.contains('ativa')) {
+                    processarMetricasRelatorio();
+                }
+
+                if (idIncidenteDetalheAberto && repositorioIncidentes.some(function(i) { return i.id === idIncidenteDetalheAberto; })) {
+                    exibirDetalheIncidente(idIncidenteDetalheAberto);
+                } else {
+                    realizarBuscaCorporativa();
+                }
+            }, function(erro) { console.error(erro); });
+
+            // --- Usuários ---
+            db.collection(COL_USUARIOS).onSnapshot(function(snapshot) { usuariosCadastrados = snapshot.docs.map(function(doc) { return doc.data(); }); renderizarListagemUsuarios(); popularSeletorAnalistas(); }, function(erro) { console.error(erro); });
+
+            // --- Chat ---
+            db.collection(COL_MENSAGENS).orderBy('timestampEnvio', 'asc').onSnapshot(function(snapshot) { const mensagens = snapshot.docs.map(function(doc) { return doc.data(); }); renderizarMensagensChat(mensagens); }, function(erro) { console.error(erro); });
+
+            // --- Executáveis ---
+            db.collection(COL_EXECUTAVEIS).orderBy('dataUpload', 'desc').onSnapshot(function(snapshot) { renderizarListaExecutaveis(snapshot.docs.map(function(doc) { return doc.data(); })); }, function(erro) { console.error(erro); });
+
+            // --- Materiais ---
+            db.collection(COL_MATERIAIS).orderBy('dataUpload', 'desc').onSnapshot(function(snapshot) { renderizarListaMateriais(snapshot.docs.map(function(doc) { return doc.data(); })); }, function(erro) { console.error(erro); });
+        }
+        iniciarSincronizacaoFirebase();
+
+        window.navegarPara = navegarPara;
+        window.filtrarModuloCloud = filtrarModulo;
+    </script>
+</body>
+</html>
