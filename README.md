@@ -2,7 +2,7 @@
 
 Um sistema integrado de gerenciamento de incidentes técnicos voltado para analistas de suporte, operações de TI e gerenciamento de faturamento. O projeto simula um ambiente corporativo completo com controle de acesso, métricas volumétricas interativas e chat interno de operações.
 
-🔗 **[CLIQUE AQUI PARA TESTAR O SISTEMA ONLINE](SUBSTITUA_ESTE_TEXTO_PELO_LINK_DO_PASSO_4)**
+🔗 **https://agostinhof5solucoes-art.github.io/analyst-assistant/**
 
 ---
 
